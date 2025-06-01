@@ -270,7 +270,7 @@
         .beer-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 25px;
             flex-wrap: wrap;
             gap: 20px;
@@ -289,6 +289,20 @@
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
+        }
+
+        .beer-meta span {
+            background: rgba(45, 45, 45, 0.5);
+            padding: 5px 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(218, 165, 32, 0.2);
+        }
+
+        .beer-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
 
         .status-badge {
@@ -319,6 +333,16 @@
             font-weight: 700;
             text-align: center;
             min-width: 80px;
+        }
+
+        .pending-info {
+            background: rgba(255, 140, 0, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #FF8C00;
+            color: #FFA500;
+            font-weight: 500;
         }
 
         /* Rating Bars */
@@ -367,23 +391,6 @@
             background: linear-gradient(90deg, #FF4444, #FF8C00, #FFD700, #32CD32);
             border-radius: 6px;
             transition: width 0.8s ease;
-            position: relative;
-        }
-
-        .bar-fill::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
         }
 
         .rating-value {
@@ -621,24 +628,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        /* Scrollbar Styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(45, 45, 45, 0.3);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #DAA520, #B8860B);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, #FFD700, #DAA520);
-        }
     </style>
 </head>
 <body>
@@ -875,6 +864,19 @@
                 var beerToSave = Object.assign({}, beer);
                 delete beerToSave.firebaseKey;
                 database.ref('beers/' + beer.firebaseKey).set(beerToSave);
+            } else {
+                database.ref('beers').push(beer);
+            }
+        }
+
+        function login() {
+            var password = document.getElementById('adminPassword').value;
+            if (password === "Beerparty@8") {
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('userInfo').classList.remove('hidden');
+                document.getElementById('connoisseurSelection').classList.remove('hidden');
+                document.getElementById('adminPassword').value = '';
+                showMessage('Welcome to Beer Connoisseurs!', 'success');
             } else {
                 showMessage('Invalid password. Please try again.', 'error');
             }
@@ -1223,7 +1225,7 @@
                                 '<span>' + ratingsCount + '/3 reviews</span>' +
                             '</div>' +
                         '</div>' +
-                        '<div style="display: flex; align-items: center; gap: 15px;">' +
+                        '<div class="beer-right">' +
                             '<div class="status-badge ' + (isComplete ? 'status-complete' : 'status-incomplete') + '">' +
                                 (isComplete ? 'Complete' : 'In Progress') +
                             '</div>' +
@@ -1238,7 +1240,7 @@
                         return ratedBy.indexOf(name) === -1; 
                     });
                     
-                    html += '<div style="background: rgba(255, 140, 0, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #FF8C00;">' +
+                    html += '<div class="pending-info">' +
                         '<strong>⏳ Awaiting reviews from:</strong> ' + pendingRaters.join(', ') +
                     '</div>';
                 }
@@ -1355,16 +1357,3 @@
     </script>
 </body>
 </html>
-                database.ref('beers').push(beer);
-            }
-        }
-
-        function login() {
-            var password = document.getElementById('adminPassword').value;
-            if (password === "Beerparty@8") {
-                document.getElementById('loginForm').classList.add('hidden');
-                document.getElementById('userInfo').classList.remove('hidden');
-                document.getElementById('connoisseurSelection').classList.remove('hidden');
-                document.getElementById('adminPassword').value = '';
-                showMessage('Welcome to Beer Connoisseurs!', 'success');
-            } else {
