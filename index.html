@@ -876,6 +876,485 @@
                 delete beerToSave.firebaseKey;
                 database.ref('beers/' + beer.firebaseKey).set(beerToSave);
             } else {
+                showMessage('Invalid password. Please try again.', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('userInfo').classList.add('hidden');
+            document.getElementById('connoisseurSelection').classList.add('hidden');
+            document.getElementById('addBeerSection').classList.add('hidden');
+            
+            // Clear selected connoisseur
+            var connoisseurs = document.querySelectorAll('.connoisseur');
+            for (var i = 0; i < connoisseurs.length; i++) {
+                connoisseurs[i].classList.remove('selected');
+            }
+            
+            showMessage('Logged out successfully.', 'success');
+        }
+
+        function selectUser(userName) {
+            currentUser = userName;
+            
+            // Update UI
+            document.getElementById('currentUserName').textContent = userName;
+            document.getElementById('addBeerSection').classList.remove('hidden');
+            
+            // Update selected connoisseur
+            var connoisseurs = document.querySelectorAll('.connoisseur');
+            for (var i = 0; i < connoisseurs.length; i++) {
+                connoisseurs[i].classList.remove('selected');
+                if (connoisseurs[i].textContent.includes(userName)) {
+                    connoisseurs[i].classList.add('selected');
+                }
+            }
+            
+            updateExistingBeerDropdown();
+            showMessage('Welcome, ' + userName + '! Ready to add your expert review.', 'success');
+        }
+
+        function updateExistingBeerDropdown() {
+            if (!currentUser) return;
+            
+            var dropdown = document.getElementById('existingBeerSelect');
+            dropdown.innerHTML = '<option value="">-- Choose a beer to rate --</option>';
+            
+            for (var i = 0; i < beers.length; i++) {
+                var beer = beers[i];
+                var ratings = beer.ratings || {};
+                var hasUserRated = ratings[currentUser.toLowerCase()];
+                var ratingsCount = Object.keys(ratings).length;
+                
+                if (!hasUserRated && ratingsCount < 3) {
+                    var firstRater = Object.values(ratings)[0] ? Object.values(ratings)[0].ratedBy : 'Unknown';
+                    dropdown.innerHTML += '<option value="' + i + '">' + 
+                        beer.name + ' (' + beer.brand + ') - Reviewed by ' + firstRater + ' - ' + ratingsCount + '/3 reviews</option>';
+                }
+            }
+        }
+
+        function selectExistingBeer() {
+            var dropdown = document.getElementById('existingBeerSelect');
+            var beerIndex = parseInt(dropdown.value);
+            var infoDiv = document.getElementById('existingBeerInfo');
+            var formDiv = document.getElementById('rateExistingBeerForm');
+            
+            if (isNaN(beerIndex)) {
+                infoDiv.classList.add('hidden');
+                formDiv.classList.add('hidden');
+                return;
+            }
+            
+            var beer = beers[beerIndex];
+            if (!beer) return;
+            
+            var ratings = beer.ratings || {};
+            var ratedBy = Object.values(ratings).map(function(r) { return r.ratedBy; });
+            var pendingRaters = ['Aryan', 'Rishi', 'Bhoda'].filter(function(name) { 
+                return ratedBy.indexOf(name) === -1; 
+            });
+            
+            infoDiv.innerHTML = '<div style="padding: 20px; background: rgba(218, 165, 32, 0.1); border-radius: 10px; margin: 15px 0;">' +
+                '<h4 style="color: #DAA520; margin-bottom: 10px;">' + beer.name + ' (' + beer.brand + ' - ' + beer.type + ')</h4>' +
+                '<p><strong>Already reviewed by:</strong> ' + ratedBy.join(', ') + '</p>' +
+                '<p><strong>Awaiting reviews from:</strong> ' + pendingRaters.join(', ') + '</p>' +
+                '</div>';
+            infoDiv.classList.remove('hidden');
+            
+            formDiv.innerHTML = '<h4 style="margin: 25px 0 15px 0; color: #DAA520;">Add Your Expert Review:</h4>' +
+                '<div class="rating-slider">' +
+                    '<label>Taste (1-10):</label>' +
+                    '<div class="slider-row">' +
+                        '<input type="range" id="existingTaste" min="1" max="10" value="5" oninput="updateExistingRatingDisplay(\'existingTaste\')">' +
+                        '<span class="rating-display" id="existingTasteValue">5</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="rating-slider">' +
+                    '<label>Aroma (1-10):</label>' +
+                    '<div class="slider-row">' +
+                        '<input type="range" id="existingAroma" min="1" max="10" value="5" oninput="updateExistingRatingDisplay(\'existingAroma\')">' +
+                        '<span class="rating-display" id="existingAromaValue">5</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="rating-slider">' +
+                    '<label>Appearance (1-10):</label>' +
+                    '<div class="slider-row">' +
+                        '<input type="range" id="existingAppearance" min="1" max="10" value="5" oninput="updateExistingRatingDisplay(\'existingAppearance\')">' +
+                        '<span class="rating-display" id="existingAppearanceValue">5</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="rating-slider">' +
+                    '<label>Mouthfeel (1-10):</label>' +
+                    '<div class="slider-row">' +
+                        '<input type="range" id="existingMouthfeel" min="1" max="10" value="5" oninput="updateExistingRatingDisplay(\'existingMouthfeel\')">' +
+                        '<span class="rating-display" id="existingMouthfeelValue">5</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="rating-slider">' +
+                    '<label>Overall (1-10):</label>' +
+                    '<div class="slider-row">' +
+                        '<input type="range" id="existingOverall" min="1" max="10" value="5" oninput="updateExistingRatingDisplay(\'existingOverall\')">' +
+                        '<span class="rating-display" id="existingOverallValue">5</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="form-row">' +
+                    '<label>Tasting Notes:</label>' +
+                    '<textarea id="existingComments" rows="3" placeholder="Share your expert opinion on this beer..."></textarea>' +
+                '</div>' +
+                '<button onclick="submitExistingBeerRating(' + beerIndex + ')" class="btn">Submit Review</button>';
+            
+            formDiv.classList.remove('hidden');
+        }
+
+        function updateRatingDisplay(category) {
+            var value = document.getElementById(category).value;
+            document.getElementById(category + 'Value').textContent = value;
+        }
+
+        function updateExistingRatingDisplay(category) {
+            var value = document.getElementById(category).value;
+            document.getElementById(category + 'Value').textContent = value;
+        }
+
+        function addBeer() {
+            if (!currentUser) {
+                showMessage('Please select your connoisseur profile first!', 'error');
+                return;
+            }
+
+            var beerName = document.getElementById('beerName').value.trim();
+            var beerBrand = document.getElementById('beerBrand').value.trim();
+            var beerType = document.getElementById('beerType').value;
+
+            if (!beerName || !beerBrand) {
+                showMessage('Please fill in both beer name and brand!', 'error');
+                return;
+            }
+
+            var rating = {
+                taste: parseInt(document.getElementById('taste').value),
+                aroma: parseInt(document.getElementById('aroma').value),
+                appearance: parseInt(document.getElementById('appearance').value),
+                mouthfeel: parseInt(document.getElementById('mouthfeel').value),
+                overall: parseInt(document.getElementById('overall').value),
+                comments: document.getElementById('comments').value.trim(),
+                ratedBy: currentUser,
+                ratedOn: new Date().toLocaleString()
+            };
+
+            var existingBeer = beers.find(function(beer) {
+                return beer.name.toLowerCase() === beerName.toLowerCase() && 
+                       beer.brand.toLowerCase() === beerBrand.toLowerCase();
+            });
+
+            if (existingBeer) {
+                var ratings = existingBeer.ratings || {};
+                if (ratings[currentUser.toLowerCase()]) {
+                    showMessage('You have already reviewed this beer!', 'error');
+                    return;
+                }
+                
+                ratings[currentUser.toLowerCase()] = rating;
+                existingBeer.ratings = ratings;
+                saveBeerToFirebase(existingBeer);
+                showMessage('Your expert review for ' + beerName + ' has been added!', 'success');
+            } else {
+                var newBeer = {
+                    name: beerName,
+                    brand: beerBrand,
+                    type: beerType,
+                    ratings: {},
+                    addedOn: new Date().toLocaleString()
+                };
+                newBeer.ratings[currentUser.toLowerCase()] = rating;
+                saveBeerToFirebase(newBeer);
+                showMessage('New beer "' + beerName + '" added with your expert review!', 'success');
+            }
+
+            clearForm();
+        }
+
+        function submitExistingBeerRating(beerIndex) {
+            var beer = beers[beerIndex];
+            var rating = {
+                taste: parseInt(document.getElementById('existingTaste').value),
+                aroma: parseInt(document.getElementById('existingAroma').value),
+                appearance: parseInt(document.getElementById('existingAppearance').value),
+                mouthfeel: parseInt(document.getElementById('existingMouthfeel').value),
+                overall: parseInt(document.getElementById('existingOverall').value),
+                comments: document.getElementById('existingComments').value.trim(),
+                ratedBy: currentUser,
+                ratedOn: new Date().toLocaleString()
+            };
+
+            var ratings = beer.ratings || {};
+            ratings[currentUser.toLowerCase()] = rating;
+            beer.ratings = ratings;
+            
+            saveBeerToFirebase(beer);
+            showMessage('Your expert review for ' + beer.name + ' has been added!', 'success');
+
+            document.getElementById('existingBeerSelect').value = '';
+            document.getElementById('existingBeerInfo').classList.add('hidden');
+            document.getElementById('rateExistingBeerForm').classList.add('hidden');
+        }
+
+        function clearForm() {
+            document.getElementById('beerName').value = '';
+            document.getElementById('beerBrand').value = '';
+            document.getElementById('beerType').value = 'Lager';
+            document.getElementById('taste').value = 5;
+            document.getElementById('aroma').value = 5;
+            document.getElementById('appearance').value = 5;
+            document.getElementById('mouthfeel').value = 5;
+            document.getElementById('overall').value = 5;
+            document.getElementById('comments').value = '';
+            
+            document.getElementById('tasteValue').textContent = '5';
+            document.getElementById('aromaValue').textContent = '5';
+            document.getElementById('appearanceValue').textContent = '5';
+            document.getElementById('mouthfeelValue').textContent = '5';
+            document.getElementById('overallValue').textContent = '5';
+        }
+
+        function calculateAverage(ratings, category) {
+            var values = Object.values(ratings || {});
+            if (values.length === 0) return 0;
+            var sum = values.reduce(function(total, rating) { return total + rating[category]; }, 0);
+            return (sum / values.length).toFixed(1);
+        }
+
+        function calculateOverallAverage(ratings) {
+            var values = Object.values(ratings || {});
+            if (values.length === 0) return 0;
+            var categories = ['taste', 'aroma', 'appearance', 'mouthfeel', 'overall'];
+            var totalSum = 0;
+            var totalCount = 0;
+
+            values.forEach(function(rating) {
+                categories.forEach(function(category) {
+                    totalSum += rating[category];
+                    totalCount++;
+                });
+            });
+
+            return totalCount > 0 ? (totalSum / totalCount).toFixed(1) : 0;
+        }
+
+        function updateLeaderboard() {
+            var completedBeers = beers.filter(function(beer) {
+                return Object.keys(beer.ratings || {}).length === 3;
+            });
+
+            completedBeers.sort(function(a, b) {
+                return parseFloat(calculateOverallAverage(b.ratings)) - parseFloat(calculateOverallAverage(a.ratings));
+            });
+
+            var podium = document.getElementById('podium');
+            
+            if (completedBeers.length === 0) {
+                podium.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #C0C0C0; font-style: italic;">No completed reviews yet. Be the first to review 3 beers!</div>';
+                return;
+            }
+
+            var html = '';
+            var medals = ['🥇', '🥈', '🥉'];
+            var classes = ['gold', 'silver', 'bronze'];
+            var ranks = ['Champion', 'Runner-up', 'Third Place'];
+
+            for (var i = 0; i < Math.min(3, completedBeers.length); i++) {
+                var beer = completedBeers[i];
+                var avgRating = calculateOverallAverage(beer.ratings);
+                
+                html += '<div class="podium-item ' + classes[i] + '">' +
+                    '<div class="medal">' + medals[i] + '</div>' +
+                    '<div class="rank">' + ranks[i] + '</div>' +
+                    '<div class="beer-name-podium">' + beer.name + '</div>' +
+                    '<div style="color: #C0C0C0; font-size: 0.9em; margin-bottom: 10px;">' + beer.brand + '</div>' +
+                    '<div class="rating-podium">' + avgRating + '/10</div>' +
+                '</div>';
+            }
+            
+            podium.innerHTML = html;
+        }
+
+        function displayBeers() {
+            var beerList = document.getElementById('beerList');
+            
+            if (beers.length === 0) {
+                beerList.innerHTML = '<div class="message loading">🔄 Loading premium beer reviews...</div>';
+                return;
+            }
+
+            // Sort beers - incomplete first, then by rating
+            beers.sort(function(a, b) {
+                var aRatings = Object.keys(a.ratings || {}).length;
+                var bRatings = Object.keys(b.ratings || {}).length;
+                var aComplete = aRatings === 3;
+                var bComplete = bRatings === 3;
+                
+                if (aComplete && !bComplete) return 1;
+                if (!aComplete && bComplete) return -1;
+                
+                var avgA = parseFloat(calculateOverallAverage(a.ratings));
+                var avgB = parseFloat(calculateOverallAverage(b.ratings));
+                return avgB - avgA;
+            });
+
+            var html = '';
+            for (var i = 0; i < beers.length; i++) {
+                var beer = beers[i];
+                var ratings = beer.ratings || {};
+                var ratingsCount = Object.keys(ratings).length;
+                var isComplete = ratingsCount === 3;
+                var overallAvg = calculateOverallAverage(ratings);
+
+                // Beer header
+                html += '<div class="beer-card">' +
+                    '<div class="beer-header">' +
+                        '<div class="beer-info">' +
+                            '<h3>' + beer.name + '</h3>' +
+                            '<div class="beer-meta">' +
+                                '<span>' + beer.brand + '</span>' +
+                                '<span>' + beer.type + '</span>' +
+                                '<span>' + ratingsCount + '/3 reviews</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div style="display: flex; align-items: center; gap: 15px;">' +
+                            '<div class="status-badge ' + (isComplete ? 'status-complete' : 'status-incomplete') + '">' +
+                                (isComplete ? 'Complete' : 'In Progress') +
+                            '</div>' +
+                            '<div class="overall-rating">' + overallAvg + '</div>' +
+                        '</div>' +
+                    '</div>';
+
+                // Show who still needs to review
+                if (!isComplete) {
+                    var ratedBy = Object.values(ratings).map(function(r) { return r.ratedBy; });
+                    var pendingRaters = ['Aryan', 'Rishi', 'Bhoda'].filter(function(name) { 
+                        return ratedBy.indexOf(name) === -1; 
+                    });
+                    
+                    html += '<div style="background: rgba(255, 140, 0, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #FF8C00;">' +
+                        '<strong>⏳ Awaiting reviews from:</strong> ' + pendingRaters.join(', ') +
+                    '</div>';
+                }
+
+                // Rating overview with bars
+                if (isComplete) {
+                    var tasteAvg = parseFloat(calculateAverage(ratings, 'taste'));
+                    var aromaAvg = parseFloat(calculateAverage(ratings, 'aroma'));
+                    var appearanceAvg = parseFloat(calculateAverage(ratings, 'appearance'));
+                    var mouthfeelAvg = parseFloat(calculateAverage(ratings, 'mouthfeel'));
+                    var overallCategoryAvg = parseFloat(calculateAverage(ratings, 'overall'));
+
+                    html += '<div class="rating-overview">' +
+                        '<h4>Overall Ratings</h4>' +
+                        '<div class="rating-bars">' +
+                            '<div class="rating-bar">' +
+                                '<div class="rating-label">Taste</div>' +
+                                '<div class="bar-container">' +
+                                    '<div class="bar-fill" style="width: ' + (tasteAvg * 10) + '%"></div>' +
+                                '</div>' +
+                                '<div class="rating-value">' + tasteAvg + '</div>' +
+                            '</div>' +
+                            '<div class="rating-bar">' +
+                                '<div class="rating-label">Aroma</div>' +
+                                '<div class="bar-container">' +
+                                    '<div class="bar-fill" style="width: ' + (aromaAvg * 10) + '%"></div>' +
+                                '</div>' +
+                                '<div class="rating-value">' + aromaAvg + '</div>' +
+                            '</div>' +
+                            '<div class="rating-bar">' +
+                                '<div class="rating-label">Appearance</div>' +
+                                '<div class="bar-container">' +
+                                    '<div class="bar-fill" style="width: ' + (appearanceAvg * 10) + '%"></div>' +
+                                '</div>' +
+                                '<div class="rating-value">' + appearanceAvg + '</div>' +
+                            '</div>' +
+                            '<div class="rating-bar">' +
+                                '<div class="rating-label">Mouthfeel</div>' +
+                                '<div class="bar-container">' +
+                                    '<div class="bar-fill" style="width: ' + (mouthfeelAvg * 10) + '%"></div>' +
+                                '</div>' +
+                                '<div class="rating-value">' + mouthfeelAvg + '</div>' +
+                            '</div>' +
+                            '<div class="rating-bar">' +
+                                '<div class="rating-label">Overall</div>' +
+                                '<div class="bar-container">' +
+                                    '<div class="bar-fill" style="width: ' + (overallCategoryAvg * 10) + '%"></div>' +
+                                '</div>' +
+                                '<div class="rating-value">' + overallCategoryAvg + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                }
+
+                // Individual reviews
+                html += '<div class="individual-reviews">';
+                Object.values(ratings).forEach(function(rating) {
+                    html += '<div class="review-card">' +
+                        '<div class="reviewer-name">' + rating.ratedBy + '</div>' +
+                        '<div class="review-ratings">' +
+                            '<span>Taste: ' + rating.taste + '</span>' +
+                            '<span>Aroma: ' + rating.aroma + '</span>' +
+                            '<span>Appearance: ' + rating.appearance + '</span>' +
+                            '<span>Mouthfeel: ' + rating.mouthfeel + '</span>' +
+                            '<span>Overall: ' + rating.overall + '</span>' +
+                        '</div>' +
+                        (rating.comments ? '<div class="review-comment">"' + rating.comments + '"</div>' : '') +
+                        '<div class="review-date">' + rating.ratedOn + '</div>' +
+                    '</div>';
+                });
+
+                // Add rating button for current user
+                var hasUserRated = currentUser && ratings[currentUser.toLowerCase()];
+                if (currentUser && !hasUserRated && ratingsCount < 3) {
+                    html += '<div class="review-card" style="border: 2px dashed rgba(218, 165, 32, 0.5); text-align: center;">' +
+                        '<button onclick="addRatingToBeer(' + i + ')" class="btn btn-secondary">Add Your Review</button>' +
+                    '</div>';
+                }
+
+                html += '</div></div>';
+            }
+            
+            beerList.innerHTML = html;
+        }
+
+        function addRatingToBeer(beerIndex) {
+            if (!currentUser) {
+                showMessage('Please login and select your connoisseur profile first!', 'error');
+                return;
+            }
+
+            // Use the dropdown system
+            document.getElementById('existingBeerSelect').value = beerIndex;
+            selectExistingBeer();
+            
+            // Scroll to the form
+            document.getElementById('addBeerSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showMessage(message, type) {
+            var messageArea = document.getElementById('messageArea');
+            var messageClass = type === 'success' ? 'success' : 
+                              type === 'loading' ? 'loading' : 'error';
+            
+            messageArea.innerHTML = '<div class="message ' + messageClass + '">' + message + '</div>';
+            
+            // Auto-hide message after 4 seconds (except loading)
+            if (type !== 'loading') {
+                setTimeout(function() {
+                    messageArea.innerHTML = '';
+                }, 4000);
+            }
+        }
+    </script>
+</body>
+</html>
                 database.ref('beers').push(beer);
             }
         }
