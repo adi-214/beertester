@@ -245,56 +245,6 @@
             background: #32CD32;
         }
 
-        .edit-btn, .delete-btn {
-            background: #FF8C00;
-            color: white;
-            border: 2px solid #FFA500;
-            margin: 5px;
-            padding: 8px 15px;
-            font-size: 0.9em;
-        }
-
-        .edit-btn:hover {
-            background: #FFA500;
-        }
-
-        .delete-btn {
-            background: #DC143C;
-            border-color: #FF0000;
-        }
-
-        .delete-btn:hover {
-            background: #FF0000;
-        }
-
-        .incomplete-beer {
-            border: 2px solid #FFA500;
-            background: rgba(255, 165, 0, 0.1);
-        }
-
-        .complete-beer {
-            border: 1px solid #FFD700;
-            background: rgba(255, 215, 0, 0.05);
-        }
-
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .status-incomplete {
-            background: #FFA500;
-            color: #1a1a1a;
-        }
-
-        .status-complete {
-            background: #32CD32;
-            color: #1a1a1a;
-        }
-
         .hidden {
             display: none;
         }
@@ -317,6 +267,44 @@
             margin: 15px 0;
             text-align: center;
             font-weight: bold;
+        }
+
+        .loading {
+            background: #2196F3;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status-incomplete {
+            background: #FFA500;
+            color: #1a1a1a;
+        }
+
+        .status-complete {
+            background: #32CD32;
+            color: #1a1a1a;
+        }
+
+        .incomplete-beer {
+            border: 2px solid #FFA500;
+            background: rgba(255, 165, 0, 0.1);
+        }
+
+        .complete-beer {
+            border: 1px solid #FFD700;
+            background: rgba(255, 215, 0, 0.05);
         }
 
         @media (max-width: 768px) {
@@ -353,7 +341,7 @@
     <div class="container">
         <div class="header">
             <h1>🍺 Beer Rating Website</h1>
-            <p>Rate and review beers with your friends</p>
+            <p>Rate and review beers with your friends - <strong>Synced across all devices!</strong></p>
         </div>
 
         <!-- Login Section -->
@@ -393,10 +381,8 @@
                     </select>
                 </div>
                 <div id="existingBeerInfo" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(255, 215, 0, 0.1); border-radius: 8px;">
-                    <!-- Beer info will be populated here -->
                 </div>
                 <div id="rateExistingBeerForm" class="hidden">
-                    <!-- Rating form will be populated here -->
                 </div>
             </div>
 
@@ -426,7 +412,6 @@
                     </select>
                 </div>
 
-                <!-- Rating Categories -->
                 <h4>Rate This Beer:</h4>
                 
                 <div class="rating-slider">
@@ -483,60 +468,97 @@
 
         <!-- Beer List Section -->
         <div class="beer-list">
-            <h2>Beer Ratings</h2>
+            <h2>Beer Ratings <span style="font-size: 0.7em; color: #FFA500;">(Live Database - Synced Across All Devices)</span></h2>
             <div id="beerList">
-                <!-- Beers will be displayed here -->
+                <div class="loading">🔄 Loading beers from database...</div>
             </div>
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <script>
-        // Hardcoded data - with localStorage persistence
+        // Firebase configuration - YOUR ACTUAL CONFIG
+        var firebaseConfig = {
+            apiKey: "AIzaSyAaZXT13Fsii71VuPYmgjUPKzJz3r6izUw",
+            authDomain: "beertester-542fc.firebaseapp.com",
+            databaseURL: "https://beertester-542fc-default-rtdb.firebaseio.com/",
+            projectId: "beertester-542fc",
+            storageBucket: "beertester-542fc.firebasestorage.app",
+            messagingSenderId: "196822611093",
+            appId: "1:196822611093:web:1e50ffd3eae55cce1d979c"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
+        // Global variables
         var currentUser = null;
         var beers = [];
 
-        // Load data from localStorage or use default
-        function loadData() {
-            var savedBeers = localStorage.getItem('beerRatings');
-            if (savedBeers) {
-                beers = JSON.parse(savedBeers);
-            } else {
-                // Default beer if no data exists
-                beers = [
-                    {
-                        id: 1,
-                        name: "Kingfisher",
-                        brand: "UBL",
-                        type: "Lager",
-                        ratings: [
-                            {
-                                taste: 6,
-                                aroma: 5,
-                                appearance: 7,
-                                mouthfeel: 6,
-                                overall: 6,
-                                comments: "Classic Indian lager, crisp and refreshing",
-                                ratedBy: "Aryan",
-                                ratedOn: "12/1/2025, 10:30:00 AM"
-                            }
-                        ],
-                        addedOn: "12/1/2025, 10:30:00 AM"
-                    }
-                ];
-                saveData(); // Save the default data
-            }
-        }
-
-        // Save data to localStorage
-        function saveData() {
-            localStorage.setItem('beerRatings', JSON.stringify(beers));
-        }
-
         // Initialize the page
         window.onload = function() {
-            loadData(); // Load saved data first
-            displayBeers();
+            loadBeersFromFirebase();
         };
+
+        // Load beers from Firebase
+        function loadBeersFromFirebase() {
+            showMessage('Loading beers from database...', 'loading');
+            
+            database.ref('beers').on('value', function(snapshot) {
+                var data = snapshot.val();
+                beers = data ? Object.keys(data).map(function(key) {
+                    var beer = data[key];
+                    beer.firebaseKey = key;
+                    return beer;
+                }) : [];
+                
+                displayBeers();
+                updateExistingBeerDropdown();
+                
+                if (beers.length === 0) {
+                    addSampleBeer();
+                }
+            });
+        }
+
+        // Add sample beer to get started
+        function addSampleBeer() {
+            var sampleBeer = {
+                name: "Kingfisher",
+                brand: "UBL",
+                type: "Lager",
+                ratings: {
+                    aryan: {
+                        taste: 6,
+                        aroma: 5,
+                        appearance: 7,
+                        mouthfeel: 6,
+                        overall: 6,
+                        comments: "Classic Indian lager, crisp and refreshing",
+                        ratedBy: "Aryan",
+                        ratedOn: new Date().toLocaleString()
+                    }
+                },
+                addedOn: new Date().toLocaleString()
+            };
+            
+            database.ref('beers').push(sampleBeer);
+        }
+
+        // Save beer to Firebase
+        function saveBeerToFirebase(beer) {
+            if (beer.firebaseKey) {
+                var beerToSave = Object.assign({}, beer);
+                delete beerToSave.firebaseKey;
+                database.ref('beers/' + beer.firebaseKey).set(beerToSave);
+            } else {
+                database.ref('beers').push(beer);
+            }
+        }
 
         function login() {
             var password = document.getElementById('adminPassword').value;
@@ -556,7 +578,6 @@
             document.getElementById('adminSection').classList.add('hidden');
             document.getElementById('addBeerSection').classList.add('hidden');
             
-            // Reset user button selections
             var buttons = document.querySelectorAll('.user-btn');
             for (var i = 0; i < buttons.length; i++) {
                 buttons[i].classList.remove('selected');
@@ -568,7 +589,6 @@
         function selectUser(userName) {
             currentUser = userName;
             
-            // Update button selection
             var buttons = document.querySelectorAll('.user-btn');
             for (var i = 0; i < buttons.length; i++) {
                 buttons[i].classList.remove('selected');
@@ -579,80 +599,55 @@
             
             document.getElementById('addBeerSection').classList.remove('hidden');
             showMessage('Welcome ' + userName + '!', 'success');
-            
-            // Update the dropdown with available beers to rate
             updateExistingBeerDropdown();
         }
 
         function updateExistingBeerDropdown() {
+            if (!currentUser) return;
+            
             var dropdown = document.getElementById('existingBeerSelect');
             dropdown.innerHTML = '<option value="">-- Select a beer to rate --</option>';
             
-            // Find beers that current user hasn't rated yet
             for (var i = 0; i < beers.length; i++) {
                 var beer = beers[i];
-                var hasUserRated = false;
+                var ratings = beer.ratings || {};
+                var hasUserRated = ratings[currentUser.toLowerCase()];
+                var ratingsCount = Object.keys(ratings).length;
                 
-                for (var j = 0; j < beer.ratings.length; j++) {
-                    if (beer.ratings[j].ratedBy === currentUser) {
-                        hasUserRated = true;
-                        break;
-                    }
-                }
-                
-                // Only show beers that are incomplete (less than 3 ratings) and user hasn't rated
-                if (!hasUserRated && beer.ratings.length < 3) {
-                    var addedBy = beer.ratings.length > 0 ? beer.ratings[0].ratedBy : 'Unknown';
-                    var ratingsCount = beer.ratings.length;
-                    dropdown.innerHTML += '<option value="' + beer.id + '">' + 
-                        beer.name + ' (' + beer.brand + ') - Added by ' + addedBy + ' - ' + ratingsCount + '/3 ratings</option>';
+                if (!hasUserRated && ratingsCount < 3) {
+                    var firstRater = Object.values(ratings)[0] ? Object.values(ratings)[0].ratedBy : 'Unknown';
+                    dropdown.innerHTML += '<option value="' + i + '">' + 
+                        beer.name + ' (' + beer.brand + ') - Added by ' + firstRater + ' - ' + ratingsCount + '/3 ratings</option>';
                 }
             }
         }
 
         function selectExistingBeer() {
             var dropdown = document.getElementById('existingBeerSelect');
-            var beerId = parseInt(dropdown.value);
+            var beerIndex = parseInt(dropdown.value);
             var infoDiv = document.getElementById('existingBeerInfo');
             var formDiv = document.getElementById('rateExistingBeerForm');
             
-            if (!beerId) {
+            if (isNaN(beerIndex)) {
                 infoDiv.classList.add('hidden');
                 formDiv.classList.add('hidden');
                 return;
             }
             
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
-            
+            var beer = beers[beerIndex];
             if (!beer) return;
             
-            // Show beer info
-            var ratedBy = [];
-            var pendingRaters = ['Aryan', 'Rishi', 'Bhoda'];
-            
-            for (var j = 0; j < beer.ratings.length; j++) {
-                ratedBy.push(beer.ratings[j].ratedBy);
-            }
-            
-            for (var k = 0; k < ratedBy.length; k++) {
-                var index = pendingRaters.indexOf(ratedBy[k]);
-                if (index > -1) {
-                    pendingRaters.splice(index, 1);
-                }
-            }
+            var ratings = beer.ratings || {};
+            var ratedBy = Object.values(ratings).map(function(r) { return r.ratedBy; });
+            var pendingRaters = ['Aryan', 'Rishi', 'Bhoda'].filter(function(name) { 
+                return ratedBy.indexOf(name) === -1; 
+            });
             
             infoDiv.innerHTML = '<h4>' + beer.name + ' (' + beer.brand + ' - ' + beer.type + ')</h4>' +
                 '<p><strong>Already rated by:</strong> ' + ratedBy.join(', ') + '</p>' +
                 '<p><strong>Waiting for:</strong> ' + pendingRaters.join(', ') + '</p>';
             infoDiv.classList.remove('hidden');
             
-            // Show rating form
             formDiv.innerHTML = '<h4>Add Your Rating:</h4>' +
                 '<div class="rating-slider">' +
                     '<label>Taste (1-10):</label>' +
@@ -661,7 +656,6 @@
                         '<span class="rating-value" id="existingTasteValue">5</span>' +
                     '</div>' +
                 '</div>' +
-
                 '<div class="rating-slider">' +
                     '<label>Aroma (1-10):</label>' +
                     '<div class="form-row">' +
@@ -669,7 +663,6 @@
                         '<span class="rating-value" id="existingAromaValue">5</span>' +
                     '</div>' +
                 '</div>' +
-
                 '<div class="rating-slider">' +
                     '<label>Appearance (1-10):</label>' +
                     '<div class="form-row">' +
@@ -677,7 +670,6 @@
                         '<span class="rating-value" id="existingAppearanceValue">5</span>' +
                     '</div>' +
                 '</div>' +
-
                 '<div class="rating-slider">' +
                     '<label>Mouthfeel (1-10):</label>' +
                     '<div class="form-row">' +
@@ -685,7 +677,6 @@
                         '<span class="rating-value" id="existingMouthfeelValue">5</span>' +
                     '</div>' +
                 '</div>' +
-
                 '<div class="rating-slider">' +
                     '<label>Overall (1-10):</label>' +
                     '<div class="form-row">' +
@@ -693,60 +684,21 @@
                         '<span class="rating-value" id="existingOverallValue">5</span>' +
                     '</div>' +
                 '</div>' +
-
                 '<div class="form-row">' +
                     '<label>Comments:</label>' +
                     '<textarea id="existingComments" rows="3" placeholder="Add your thoughts about this beer..."></textarea>' +
                 '</div>' +
-
-                '<button onclick="submitExistingBeerRating(' + beerId + ')">Submit My Rating</button>';
+                '<button onclick="submitExistingBeerRating(' + beerIndex + ')">Submit My Rating</button>';
             
             formDiv.classList.remove('hidden');
         }
 
-        function updateExistingRatingDisplay(category) {
+        function updateRatingDisplay(category) {
             var value = document.getElementById(category).value;
             document.getElementById(category + 'Value').textContent = value;
         }
 
-        function submitExistingBeerRating(beerId) {
-            var rating = {
-                taste: parseInt(document.getElementById('existingTaste').value),
-                aroma: parseInt(document.getElementById('existingAroma').value),
-                appearance: parseInt(document.getElementById('existingAppearance').value),
-                mouthfeel: parseInt(document.getElementById('existingMouthfeel').value),
-                overall: parseInt(document.getElementById('existingOverall').value),
-                comments: document.getElementById('existingComments').value.trim(),
-                ratedBy: currentUser,
-                ratedOn: new Date().toLocaleString()
-            };
-
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
-            
-            beer.ratings.push(rating);
-
-            showMessage('Your rating for ' + beer.name + ' has been added!', 'success');
-            
-            // Save data to localStorage
-            saveData();
-
-            // Clear the form
-            document.getElementById('existingBeerSelect').value = '';
-            document.getElementById('existingBeerInfo').classList.add('hidden');
-            document.getElementById('rateExistingBeerForm').classList.add('hidden');
-            
-            // Refresh dropdown and display
-            updateExistingBeerDropdown();
-            displayBeers();
-        }
-
-        function updateRatingDisplay(category) {
+        function updateExistingRatingDisplay(category) {
             var value = document.getElementById(category).value;
             document.getElementById(category + 'Value').textContent = value;
         }
@@ -777,365 +729,61 @@
                 ratedOn: new Date().toLocaleString()
             };
 
-            // Check if beer already exists
-            var existingBeer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].name.toLowerCase() === beerName.toLowerCase() && 
-                    beers[i].brand.toLowerCase() === beerBrand.toLowerCase()) {
-                    existingBeer = beers[i];
-                    break;
-                }
-            }
+            var existingBeer = beers.find(function(beer) {
+                return beer.name.toLowerCase() === beerName.toLowerCase() && 
+                       beer.brand.toLowerCase() === beerBrand.toLowerCase();
+            });
 
             if (existingBeer) {
-                // Check if current user has already rated this beer
-                var alreadyRated = false;
-                for (var j = 0; j < existingBeer.ratings.length; j++) {
-                    if (existingBeer.ratings[j].ratedBy === currentUser) {
-                        alreadyRated = true;
-                        break;
-                    }
-                }
-                
-                if (alreadyRated) {
+                var ratings = existingBeer.ratings || {};
+                if (ratings[currentUser.toLowerCase()]) {
                     showMessage('You have already rated this beer!', 'error');
                     return;
                 }
                 
-                // Add rating to existing beer
-                existingBeer.ratings.push(rating);
+                ratings[currentUser.toLowerCase()] = rating;
+                existingBeer.ratings = ratings;
+                saveBeerToFirebase(existingBeer);
                 showMessage('Your rating for ' + beerName + ' has been added!', 'success');
             } else {
-                // Create new beer
                 var newBeer = {
-                    id: Date.now(),
                     name: beerName,
                     brand: beerBrand,
                     type: beerType,
-                    ratings: [rating],
+                    ratings: {},
                     addedOn: new Date().toLocaleString()
                 };
-                beers.push(newBeer);
+                newBeer.ratings[currentUser.toLowerCase()] = rating;
+                saveBeerToFirebase(newBeer);
                 showMessage('New beer "' + beerName + '" added with your rating!', 'success');
             }
 
-            // Save data to localStorage
-            saveData();
-
-            // Clear form
             clearForm();
-
-            // Refresh dropdown after adding new beer
-            updateExistingBeerDropdown();
-            displayBeers();
         }
 
-        function addRatingToBeer(beerId) {
-            if (!currentUser) {
-                showMessage('Please login and select your name first!', 'error');
-                return;
-            }
-
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
-            
-            if (!beer) {
-                showMessage('Beer not found!', 'error');
-                return;
-            }
-
-            // Check if current user has already rated this beer
-            var alreadyRated = false;
-            for (var j = 0; j < beer.ratings.length; j++) {
-                if (beer.ratings[j].ratedBy === currentUser) {
-                    alreadyRated = true;
-                    break;
-                }
-            }
-            
-            if (alreadyRated) {
-                showMessage('You have already rated this beer!', 'error');
-                return;
-            }
-
-            // Create rating form
-            var ratingForm = '<div class="form-section" style="margin-top: 15px; background: rgba(34, 139, 34, 0.1); border-color: #32CD32;">' +
-                '<h4>Add Your Rating for ' + beer.name + '</h4>' +
-                
-                '<div class="rating-slider">' +
-                    '<label>Taste (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="newTaste' + beerId + '" min="1" max="10" value="5" oninput="updateNewRatingDisplay(\'newTaste' + beerId + '\')">' +
-                        '<span class="rating-value" id="newTaste' + beerId + 'Value">5</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Aroma (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="newAroma' + beerId + '" min="1" max="10" value="5" oninput="updateNewRatingDisplay(\'newAroma' + beerId + '\')">' +
-                        '<span class="rating-value" id="newAroma' + beerId + 'Value">5</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Appearance (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="newAppearance' + beerId + '" min="1" max="10" value="5" oninput="updateNewRatingDisplay(\'newAppearance' + beerId + '\')">' +
-                        '<span class="rating-value" id="newAppearance' + beerId + 'Value">5</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Mouthfeel (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="newMouthfeel' + beerId + '" min="1" max="10" value="5" oninput="updateNewRatingDisplay(\'newMouthfeel' + beerId + '\')">' +
-                        '<span class="rating-value" id="newMouthfeel' + beerId + 'Value">5</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Overall (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="newOverall' + beerId + '" min="1" max="10" value="5" oninput="updateNewRatingDisplay(\'newOverall' + beerId + '\')">' +
-                        '<span class="rating-value" id="newOverall' + beerId + 'Value">5</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="form-row">' +
-                    '<label>Comments:</label>' +
-                    '<textarea id="newComments' + beerId + '" rows="3" placeholder="Add your thoughts about this beer..."></textarea>' +
-                '</div>' +
-
-                '<button onclick="submitNewRating(' + beerId + ')">Submit My Rating</button>' +
-                '<button onclick="cancelNewRating(' + beerId + ')" style="background: #DC143C; border-color: #FF0000;">Cancel</button>' +
-            '</div>';
-
-            // Add form to the beer card
-            var beerCard = document.querySelector('[data-beer-id="' + beerId + '"]');
-            var existingForm = beerCard.querySelector('.form-section');
-            if (existingForm) {
-                existingForm.remove();
-            }
-            beerCard.insertAdjacentHTML('beforeend', ratingForm);
-        }
-
-        function updateNewRatingDisplay(elementId) {
-            var value = document.getElementById(elementId).value;
-            document.getElementById(elementId + 'Value').textContent = value;
-        }
-
-        function submitNewRating(beerId) {
+        function submitExistingBeerRating(beerIndex) {
+            var beer = beers[beerIndex];
             var rating = {
-                taste: parseInt(document.getElementById('newTaste' + beerId).value),
-                aroma: parseInt(document.getElementById('newAroma' + beerId).value),
-                appearance: parseInt(document.getElementById('newAppearance' + beerId).value),
-                mouthfeel: parseInt(document.getElementById('newMouthfeel' + beerId).value),
-                overall: parseInt(document.getElementById('newOverall' + beerId).value),
-                comments: document.getElementById('newComments' + beerId).value.trim(),
+                taste: parseInt(document.getElementById('existingTaste').value),
+                aroma: parseInt(document.getElementById('existingAroma').value),
+                appearance: parseInt(document.getElementById('existingAppearance').value),
+                mouthfeel: parseInt(document.getElementById('existingMouthfeel').value),
+                overall: parseInt(document.getElementById('existingOverall').value),
+                comments: document.getElementById('existingComments').value.trim(),
                 ratedBy: currentUser,
                 ratedOn: new Date().toLocaleString()
             };
 
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
+            var ratings = beer.ratings || {};
+            ratings[currentUser.toLowerCase()] = rating;
+            beer.ratings = ratings;
             
-            beer.ratings.push(rating);
-
+            saveBeerToFirebase(beer);
             showMessage('Your rating for ' + beer.name + ' has been added!', 'success');
-            saveData(); // Save changes
-            displayBeers();
-        }
 
-        function editRating(beerId, ratedBy) {
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
-            
-            if (!beer) return;
-
-            var rating = null;
-            for (var j = 0; j < beer.ratings.length; j++) {
-                if (beer.ratings[j].ratedBy === ratedBy) {
-                    rating = beer.ratings[j];
-                    break;
-                }
-            }
-            
-            if (!rating) return;
-
-            // Create edit form
-            var editForm = '<div class="form-section" style="margin-top: 15px; background: rgba(255, 140, 0, 0.1); border-color: #FFA500;">' +
-                '<h4>Edit Your Rating for ' + beer.name + '</h4>' +
-                
-                '<div class="rating-slider">' +
-                    '<label>Taste (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="editTaste' + beerId + '" min="1" max="10" value="' + rating.taste + '" oninput="updateEditRatingDisplay(\'editTaste' + beerId + '\')">' +
-                        '<span class="rating-value" id="editTaste' + beerId + 'Value">' + rating.taste + '</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Aroma (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="editAroma' + beerId + '" min="1" max="10" value="' + rating.aroma + '" oninput="updateEditRatingDisplay(\'editAroma' + beerId + '\')">' +
-                        '<span class="rating-value" id="editAroma' + beerId + 'Value">' + rating.aroma + '</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Appearance (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="editAppearance' + beerId + '" min="1" max="10" value="' + rating.appearance + '" oninput="updateEditRatingDisplay(\'editAppearance' + beerId + '\')">' +
-                        '<span class="rating-value" id="editAppearance' + beerId + 'Value">' + rating.appearance + '</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Mouthfeel (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="editMouthfeel' + beerId + '" min="1" max="10" value="' + rating.mouthfeel + '" oninput="updateEditRatingDisplay(\'editMouthfeel' + beerId + '\')">' +
-                        '<span class="rating-value" id="editMouthfeel' + beerId + 'Value">' + rating.mouthfeel + '</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="rating-slider">' +
-                    '<label>Overall (1-10):</label>' +
-                    '<div class="form-row">' +
-                        '<input type="range" id="editOverall' + beerId + '" min="1" max="10" value="' + rating.overall + '" oninput="updateEditRatingDisplay(\'editOverall' + beerId + '\')">' +
-                        '<span class="rating-value" id="editOverall' + beerId + 'Value">' + rating.overall + '</span>' +
-                    '</div>' +
-                '</div>' +
-
-                '<div class="form-row">' +
-                    '<label>Comments:</label>' +
-                    '<textarea id="editComments' + beerId + '" rows="3" placeholder="Add your thoughts about this beer...">' + rating.comments + '</textarea>' +
-                '</div>' +
-
-                '<button onclick="saveEditedRating(' + beerId + ', \'' + ratedBy + '\')">Save Changes</button>' +
-                '<button onclick="cancelEdit(' + beerId + ')" style="background: #DC143C; border-color: #FF0000;">Cancel</button>' +
-            '</div>';
-
-            // Add form to the beer card
-            var beerCard = document.querySelector('[data-beer-id="' + beerId + '"]');
-            var existingForm = beerCard.querySelector('.form-section');
-            if (existingForm) {
-                existingForm.remove();
-            }
-            beerCard.insertAdjacentHTML('beforeend', editForm);
-        }
-
-        function updateEditRatingDisplay(elementId) {
-            var value = document.getElementById(elementId).value;
-            document.getElementById(elementId + 'Value').textContent = value;
-        }
-
-        function saveEditedRating(beerId, ratedBy) {
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
-
-            for (var j = 0; j < beer.ratings.length; j++) {
-                if (beer.ratings[j].ratedBy === ratedBy) {
-                    beer.ratings[j].taste = parseInt(document.getElementById('editTaste' + beerId).value);
-                    beer.ratings[j].aroma = parseInt(document.getElementById('editAroma' + beerId).value);
-                    beer.ratings[j].appearance = parseInt(document.getElementById('editAppearance' + beerId).value);
-                    beer.ratings[j].mouthfeel = parseInt(document.getElementById('editMouthfeel' + beerId).value);
-                    beer.ratings[j].overall = parseInt(document.getElementById('editOverall' + beerId).value);
-                    beer.ratings[j].comments = document.getElementById('editComments' + beerId).value.trim();
-                    beer.ratings[j].ratedOn = new Date().toLocaleString() + ' (edited)';
-                    break;
-                }
-            }
-
-            showMessage('Your rating has been updated!', 'success');
-            saveData(); // Save changes
-            updateExistingBeerDropdown();
-            displayBeers();
-        }
-
-        function cancelEdit(beerId) {
-            var beerCard = document.querySelector('[data-beer-id="' + beerId + '"]');
-            var form = beerCard.querySelector('.form-section');
-            if (form) {
-                form.remove();
-            }
-        }
-
-        function deleteRating(beerId, ratedBy) {
-            if (!confirm('Are you sure you want to delete your rating for this beer?')) {
-                return;
-            }
-
-            var beer = null;
-            for (var i = 0; i < beers.length; i++) {
-                if (beers[i].id === beerId) {
-                    beer = beers[i];
-                    break;
-                }
-            }
-
-            // Remove the rating
-            for (var j = beer.ratings.length - 1; j >= 0; j--) {
-                if (beer.ratings[j].ratedBy === ratedBy) {
-                    beer.ratings.splice(j, 1);
-                    break;
-                }
-            }
-
-            // If no ratings left, remove the beer entirely
-            if (beer.ratings.length === 0) {
-                for (var k = beers.length - 1; k >= 0; k--) {
-                    if (beers[k].id === beerId) {
-                        beers.splice(k, 1);
-                        break;
-                    }
-                }
-                showMessage('Beer and your rating have been deleted!', 'success');
-            } else {
-                showMessage('Your rating has been deleted!', 'success');
-            }
-
-            saveData(); // Save changes
-            updateExistingBeerDropdown();
-            displayBeers();
-        }
-
-        function deleteBeer(beerId) {
-            if (!confirm('Are you sure you want to delete this entire beer and all its ratings?')) {
-                return;
-            }
-
-            for (var i = beers.length - 1; i >= 0; i--) {
-                if (beers[i].id === beerId) {
-                    beers.splice(i, 1);
-                    break;
-                }
-            }
-
-            showMessage('Beer and all ratings have been deleted!', 'success');
-            saveData(); // Save changes
-            updateExistingBeerDropdown();
-            displayBeers();
+            document.getElementById('existingBeerSelect').value = '';
+            document.getElementById('existingBeerInfo').classList.add('hidden');
+            document.getElementById('rateExistingBeerForm').classList.add('hidden');
         }
 
         function clearForm() {
@@ -1149,7 +797,6 @@
             document.getElementById('overall').value = 5;
             document.getElementById('comments').value = '';
             
-            // Reset rating displays
             document.getElementById('tasteValue').textContent = '5';
             document.getElementById('aromaValue').textContent = '5';
             document.getElementById('appearanceValue').textContent = '5';
@@ -1158,26 +805,25 @@
         }
 
         function calculateAverage(ratings, category) {
-            if (ratings.length === 0) return 0;
-            var sum = 0;
-            for (var i = 0; i < ratings.length; i++) {
-                sum += ratings[i][category];
-            }
-            return (sum / ratings.length).toFixed(1);
+            var values = Object.values(ratings || {});
+            if (values.length === 0) return 0;
+            var sum = values.reduce(function(total, rating) { return total + rating[category]; }, 0);
+            return (sum / values.length).toFixed(1);
         }
 
         function calculateOverallAverage(ratings) {
-            if (ratings.length === 0) return 0;
+            var values = Object.values(ratings || {});
+            if (values.length === 0) return 0;
             var categories = ['taste', 'aroma', 'appearance', 'mouthfeel', 'overall'];
             var totalSum = 0;
             var totalCount = 0;
 
-            for (var i = 0; i < ratings.length; i++) {
-                for (var j = 0; j < categories.length; j++) {
-                    totalSum += ratings[i][categories[j]];
+            values.forEach(function(rating) {
+                categories.forEach(function(category) {
+                    totalSum += rating[category];
                     totalCount++;
-                }
-            }
+                });
+            });
 
             return totalCount > 0 ? (totalSum / totalCount).toFixed(1) : 0;
         }
@@ -1192,8 +838,10 @@
 
             // Sort beers - incomplete beers first, then by rating
             beers.sort(function(a, b) {
-                var aComplete = a.ratings.length === 3;
-                var bComplete = b.ratings.length === 3;
+                var aRatings = Object.keys(a.ratings || {}).length;
+                var bRatings = Object.keys(b.ratings || {}).length;
+                var aComplete = aRatings === 3;
+                var bComplete = bRatings === 3;
                 
                 if (aComplete && !bComplete) return 1;
                 if (!aComplete && bComplete) return -1;
@@ -1206,39 +854,26 @@
             var html = '';
             for (var i = 0; i < beers.length; i++) {
                 var beer = beers[i];
-                var isComplete = beer.ratings.length === 3;
-                var overallAvg = calculateOverallAverage(beer.ratings);
-                var tasteAvg = calculateAverage(beer.ratings, 'taste');
-                var aromaAvg = calculateAverage(beer.ratings, 'aroma');
-                var appearanceAvg = calculateAverage(beer.ratings, 'appearance');
-                var mouthfeelAvg = calculateAverage(beer.ratings, 'mouthfeel');
-                var overallCategoryAvg = calculateAverage(beer.ratings, 'overall');
+                var ratings = beer.ratings || {};
+                var ratingsCount = Object.keys(ratings).length;
+                var isComplete = ratingsCount === 3;
+                var overallAvg = calculateOverallAverage(ratings);
+                var tasteAvg = calculateAverage(ratings, 'taste');
+                var aromaAvg = calculateAverage(ratings, 'aroma');
+                var appearanceAvg = calculateAverage(ratings, 'appearance');
+                var mouthfeelAvg = calculateAverage(ratings, 'mouthfeel');
+                var overallCategoryAvg = calculateAverage(ratings, 'overall');
 
                 // Get who has rated and who hasn't
-                var ratedBy = [];
-                var pendingRaters = ['Aryan', 'Rishi', 'Bhoda'];
-                
-                for (var j = 0; j < beer.ratings.length; j++) {
-                    ratedBy.push(beer.ratings[j].ratedBy);
-                }
-                
-                for (var k = 0; k < ratedBy.length; k++) {
-                    var index = pendingRaters.indexOf(ratedBy[k]);
-                    if (index > -1) {
-                        pendingRaters.splice(index, 1);
-                    }
-                }
+                var ratedBy = Object.values(ratings).map(function(r) { return r.ratedBy; });
+                var pendingRaters = ['Aryan', 'Rishi', 'Bhoda'].filter(function(name) { 
+                    return ratedBy.indexOf(name) === -1; 
+                });
 
                 var ratingsHtml = '';
-                for (var j = 0; j < beer.ratings.length; j++) {
-                    var rating = beer.ratings[j];
-                    var canEdit = currentUser === rating.ratedBy;
-                    
+                Object.values(ratings).forEach(function(rating) {
                     ratingsHtml += '<div class="user-rating">' +
-                        '<div class="user-name">' + rating.ratedBy + 
-                        (canEdit ? '<button class="edit-btn" onclick="editRating(' + beer.id + ', \'' + rating.ratedBy + '\')">Edit</button>' +
-                                  '<button class="delete-btn" onclick="deleteRating(' + beer.id + ', \'' + rating.ratedBy + '\')">Delete</button>' : '') +
-                        '</div>' +
+                        '<div class="user-name">' + rating.ratedBy + '</div>' +
                         '<div class="rating-details">' +
                             '<span>Taste: ' + rating.taste + '</span>' +
                             '<span>Aroma: ' + rating.aroma + '</span>' +
@@ -1249,18 +884,13 @@
                         '</div>' +
                         (rating.comments ? '<div style="margin-top: 10px; font-style: italic; color: #FFA500;">"' + rating.comments + '"</div>' : '') +
                     '</div>';
-                }
+                });
 
                 var canAddRating = false;
                 var hasUserRated = false;
                 if (currentUser) {
-                    for (var k = 0; k < beer.ratings.length; k++) {
-                        if (beer.ratings[k].ratedBy === currentUser) {
-                            hasUserRated = true;
-                            break;
-                        }
-                    }
-                    canAddRating = !hasUserRated;
+                    hasUserRated = !!ratings[currentUser.toLowerCase()];
+                    canAddRating = !hasUserRated && ratingsCount < 3;
                 }
 
                 // Show who still needs to rate if not complete
@@ -1269,23 +899,17 @@
                     pendingText = '<div style="color: #FFA500; margin: 10px 0; font-weight: bold;">⏳ Waiting for ratings from: ' + pendingRaters.join(', ') + '</div>';
                 }
 
-                // Can delete entire beer only if user has rated it
-                var canDeleteBeer = hasUserRated;
-
-                html += '<div class="beer-card ' + (isComplete ? 'complete-beer' : 'incomplete-beer') + '" data-beer-id="' + beer.id + '">' +
+                html += '<div class="beer-card ' + (isComplete ? 'complete-beer' : 'incomplete-beer') + '" data-beer-id="' + beer.firebaseKey + '">' +
                     '<div class="beer-header">' +
                         '<div>' +
                             '<div class="beer-name">' + beer.name + 
                             '<span class="status-badge ' + (isComplete ? 'status-complete' : 'status-incomplete') + '">' +
                             (isComplete ? 'COMPLETE' : 'OPEN FOR RATINGS') + '</span></div>' +
                             '<div style="color: #FFA500; margin-top: 5px;">' +
-                                beer.brand + ' • ' + beer.type + ' • ' + beer.ratings.length + '/3 ratings' +
+                                beer.brand + ' • ' + beer.type + ' • ' + ratingsCount + '/3 ratings' +
                             '</div>' +
                         '</div>' +
-                        '<div>' +
-                            '<div class="average-score">' + overallAvg + '</div>' +
-                            (canDeleteBeer ? '<button class="delete-btn" onclick="deleteBeer(' + beer.id + ')" style="margin-top: 5px; font-size: 0.8em;">Delete Beer</button>' : '') +
-                        '</div>' +
+                        '<div class="average-score">' + overallAvg + '</div>' +
                     '</div>' +
                     
                     pendingText +
@@ -1304,23 +928,52 @@
 
                     '<div class="ratings-grid">' + ratingsHtml + '</div>' +
 
-                    (canAddRating ? '<button class="add-rating-btn" onclick="addRatingToBeer(' + beer.id + ')">Add My Rating</button>' : '') +
+                    (canAddRating ? '<button class="add-rating-btn" onclick="addRatingToBeer(' + i + ')">Add My Rating</button>' : '') +
                 '</div>';
             }
             
             beerList.innerHTML = html;
         }
 
+        function addRatingToBeer(beerIndex) {
+            if (!currentUser) {
+                showMessage('Please login and select your name first!', 'error');
+                return;
+            }
+
+            var beer = beers[beerIndex];
+            if (!beer) {
+                showMessage('Beer not found!', 'error');
+                return;
+            }
+
+            var ratings = beer.ratings || {};
+            if (ratings[currentUser.toLowerCase()]) {
+                showMessage('You have already rated this beer!', 'error');
+                return;
+            }
+
+            // Use the dropdown system instead
+            document.getElementById('existingBeerSelect').value = beerIndex;
+            selectExistingBeer();
+            
+            // Scroll to the form
+            document.getElementById('addBeerSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
         function showMessage(message, type) {
             var messageArea = document.getElementById('messageArea');
-            var messageClass = type === 'success' ? 'success-message' : 'error-message';
+            var messageClass = type === 'success' ? 'success-message' : 
+                              type === 'loading' ? 'loading' : 'error-message';
             
             messageArea.innerHTML = '<div class="' + messageClass + '">' + message + '</div>';
             
-            // Auto-hide message after 3 seconds
-            setTimeout(function() {
-                messageArea.innerHTML = '';
-            }, 3000);
+            // Auto-hide message after 3 seconds (except loading)
+            if (type !== 'loading') {
+                setTimeout(function() {
+                    messageArea.innerHTML = '';
+                }, 3000);
+            }
         }
 
         // Handle Enter key for password input
